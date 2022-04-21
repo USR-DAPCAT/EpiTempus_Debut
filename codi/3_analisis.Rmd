@@ -1,0 +1,467 @@
+---
+title: 'Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[2007-2018] '
+author: "Rai Puig & Jordi Real"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    css: logos_css/usr_styles.css
+    fig_caption: yes
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+params:
+   dir_dades_desti: "dades/mostra" # dades/mostra"  # dades 
+   ANY: '2018'
+   website: https://github.com/USR-DAPCAT/
+---
+&nbsp;
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"https://www.idiapjgol.org/images/logo.png\" style=\"float: right ;width: 130px;\"/>')
+     $head.prepend('<img src=\"https://avatars2.githubusercontent.com/u/57066591?s=200&v=4\" style=\"margin-left:25% ;width: 80px;\"/>')
+     $head.prepend('<img src=\"logos_css/logoDAP_Cat.png\" style=\"float: left:1;width: 185px;\"/>')
+   });
+</script>
+
+
+<div class="watermark">DRAFT</div>
+
+****
+
+## 0. Status:
+
+**Aggregation windows**
+
+&check; dt_index1:[dt_diagnostics_AP_HOSP].DM2_incusion.[window.days=c(-Inf,0)] <br/>
+&check; dt_index2:[dt_facturacio].DM2_incusion.[window.days=c(-Inf,0)] <br/>
+&check; dt_index3:dt_variables/filter(cod=="GLICADA") %>% filter(val>=6.5) <br/>
+&check; Dm2 debut: min.date(dt_index1,dt_index2,dt_index3) <br/>
+&check; Problemes de SALUT:[dt_diagnostics_AP_HOSP] [window.days=c(-Inf,0)] <br/>
+&check; Facturacio:[dtagr_facturat_2018_epiTempusDM2_1] [window.days=c(-Inf,0)] <br/>
+&check; Facturacio.events:[dtagr_facturat_2018_epiTempusDM2_1] [window.days=c(0,Inf)] <br/>
+&check; dt_variables=dt_analitiques+dt_cliniques [window.days=c(-365,0)] <br/>
+&check; dt_tabaquisme [window.days=c(-Inf,0)] <br/>
+
+
+
+**Latest Updates   October/ 2021** 
+
+&check;   flat table construction+ Tables of first drug billed after diagnosis of DM2    <br/>
+
+
+ 
+**Realized**
+
+&check;   flat table construction+ Tables of first drug billed after diagnosis of DM2    <br/>
+
+
+**Pending**
+
+&check; Revision and debugging of errors.   <br/>
+
+# Validation phase
+
+## Preparation Phase
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, include=F,size="huge")
+
+gc()
+# libreries i funcions
+library("dplyr")
+library("lubridate")
+library("compareGroups")
+
+
+# Descarregar funcions github -
+link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
+devtools::source_url(link_source)
+
+
+conductor_codis<-here::here("CATALEG_PROYECTO_epitempus.xlsx")
+conductor<-here::here("Conductor_PROYECTO_epitempus.xlsx")
+
+```
+
+
+```{r llegir, include = FALSE}
+# Llegir plana
+
+dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
+
+
+```
+
+```{r recodes}
+
+
+dades<-dades %>% mutate(year_inclusio=stringr::str_sub(dtindex,1,4)) 
+
+# %>% mutate(year_inclusio=if_else(year_inclusio<=2007,"<=2007",year_inclusio))
+
+
+
+```
+
+## 1. Flow chart 
+```{r Flow chart, include=T}
+
+
+
+flow_chart1<-criteris_exclusio_diagrama(dt=dades,
+                                        taulavariables=conductor,
+                                        criteris = "exc_pre",
+                                        ordre="exc_ordre",
+                                        grups=NA,
+                                        etiquetes="descripcio2",
+                                        sequencial = T,
+                                        pob_lab=c("epiTempus DM2  ","epiTempus DM2 without exclusions"),
+                                        colors=c("white","grey"),
+                                        forma=c("ellipse","box"))
+
+flow_chart1
+
+
+
+
+#Apliquem les EXCLUSIONS!
+dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
+
+
+
+#Apliquem que surtin els MISSINGS a les TAULES , a partir del CONDUCTOR!
+dades<-dades%>%mutate_at(extreure.variables("missings",conductor,dt=dades),as.factor)
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
+
+
+
+
+
+```
+
+
+
+
+
+
+## 2. Descriptive and exploratory general.
+```{r resultats1, include=T}
+#
+
+formu<- formula_table1 ("Taula01",y="",taulavariables=conductor,dt=dades)
+
+#i) GENERAL
+table1::table1(formu,
+               data = dades,caption="General descriptive analysis",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+## 3. Descriptive and exploratory general.First drug billed after diagnosis of DM2
+
+
+
+```{r resultats4, include=T,eval=F}
+
+
+
+formu1c<-formula.text("Farmacs_ad","age5.cat", taulavariables = conductor)
+formu2c<-formula.text("Farmacs_ad","DG.ARTPER.AVC.CI", taulavariables = conductor)
+formu3c<-formula.text("Farmacs_ad","DG.IC", taulavariables = conductor)
+formu4c<-formula.text("Farmacs_ad","CKDEPI.valor_CAT4", taulavariables = conductor)
+formu5c<-formula.text("Farmacs_ad","CKDEPI.valor_CAT5", taulavariables = conductor)
+formu6c<-formula.text("Farmacs_ad","IMC.valor_cat3", taulavariables = conductor)
+formu7c<-formula.text("Farmacs_ad","GLICADA_CAT3", taulavariables = conductor)
+
+
+
+descrTable(formu1c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by age")
+
+descrTable(formu2c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by background heart attack, stroke or ArtPer")
+
+descrTable(formu3c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by Heart failure")
+
+descrTable(formu4c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by FG<60(CKD-epi)")
+
+descrTable(formu5c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by FG<30(CKD-epi)")
+
+descrTable(formu6c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by BMI>35  ")
+
+descrTable(formu7c,data=dades,show.p.overall = F,hide = "No") %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by HbA1c")
+
+
+formu<-formula.text("Farmacs_ad","year_inclusio", taulavariables = conductor)
+descrTable(formu,data=dades,show.p.overall = F,hide = "No",max.ylev = 20,max.xlev = 20) %>% 
+  export2md(caption="First drug billed after diagnosis DM2 by Year")
+
+
+
+
+```
+
+## 4. HbA1c value before 1st billing and Global.
+```{r resultats5, include=T,eval=F}
+
+#table(dades$First.event_Metformina)
+#table(dades$FF.EVENT.Metformina)
+
+#0b)
+hist(dades$GLICADA.valor,
+     main="Distribution of glycated values(HbA1c),without exclusions",
+     xlab="HbA1c value nearest one year ago for each patient",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(3,20) ,
+     ylim=c(0,250),
+     breaks = 1000,
+         )
+print(paste("MIN.Glycated values(HbA1c) :",min(dades$GLICADA.valor, na.rm=TRUE)))
+print(paste("MAX.Glycated values(HbA1c) :",max(dades$GLICADA.valor, na.rm=TRUE)))
+
+
+
+
+formu<-formula_table1("Glicada_farmac","",taulavariables = conductor)
+#i) GENERAL
+table1::table1(formu ,
+               data = dades,caption="General descriptive analysis.Drugs.",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+
+
+
+```
+## 5. Months between the onset of DM2 and the first billing.
+
+
+```{r resultats6, include=T,eval=F}
+
+formu<-formula_table1("Temps_farmac","",taulavariables = conductor)
+
+
+#i) GENERAL
+table1::table1(formu ,
+               data = dades,caption="General descriptive analysis.Times(months) between Index date and First drug,without exclusions.Drug:Metformina",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]",.="[Min , Max]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+
+## 6. Graphics of  Months between the onset of DM2 and the first billing.
+```{r resultats8, include=T,eval=F}
+
+
+#i)
+hist(dades$First.event_Metformina_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:Metformin",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,100) ,
+     ylim=c(0,250),
+     breaks = 1000,
+         )
+print(paste("MIN.Metformin value :",min(dades$First.event_Metformina_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.Metformin value :",max(dades$First.event_Metformina_Temps_Index, na.rm=TRUE)))
+
+
+#ii)
+
+hist(dades$First.event_pioglitazona_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:Pioglitazone",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,50) ,
+     ylim=c(0,10),
+     breaks = 1000,
+         )
+print(paste("MIN.Pioglitazone value :",min(dades$First.event_pioglitazona_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.Pioglitazone value :",max(dades$First.event_pioglitazona_Temps_Index, na.rm=TRUE)))
+
+
+
+
+
+#iii)
+hist(dades$First.event_Sulfonilureas_Temps_Index,
+    main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:Sulfonylureas",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,100) ,
+     ylim=c(0,150),
+     breaks = 1000,
+         )
+print(paste("MIN.Sulfonylureas value :",min(dades$First.event_Sulfonilureas_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.Sulfonylureas value :",max(dades$First.event_Sulfonilureas_Temps_Index, na.rm=TRUE)))
+
+
+
+
+
+#iv)
+hist(dades$First.event_Glinides_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:Glinides",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,100) ,
+     ylim=c(0,30),
+     breaks = 1000,
+         )
+print(paste("MIN.Glinides value :",min(dades$First.event_Glinides_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.Glinides value :",max(dades$First.event_Glinides_Temps_Index, na.rm=TRUE)))
+
+
+#v)
+hist(dades$First.event_ISGLT2_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:ISGLT2",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,100) ,
+     ylim=c(0,15),
+   breaks = 1000,
+         )
+print(paste("MIN.ISGLT2 value :",min(dades$First.event_ISGLT2_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.ISGLT2 value :",max(dades$First.event_ISGLT2_Temps_Index, na.rm=TRUE)))
+
+
+#vi)
+hist(dades$First.event_IDPP4_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+    xlab="Drug:IDPP4",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,100) ,
+     ylim=c(0,100),
+     breaks = 1000,
+         )
+print(paste("MIN.IDPP4 value :",min(dades$First.event_IDPP4_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.IDPP4 value :",max(dades$First.event_IDPP4_Temps_Index, na.rm=TRUE)))
+
+
+#vii)
+hist(dades$First.event_aGLP1_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:aGLP1",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,5) ,
+     ylim=c(0,10),
+     breaks = 1000,
+         )
+print(paste("MIN.aGLP1 value :",min(dades$First.event_aGLP1_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.aGLP1 value :",max(dades$First.event_aGLP1_Temps_Index, na.rm=TRUE)))
+
+
+#viii)
+hist(dades$First.event_Insul_Temps_Index,
+     main="Distribution of Times(months) between Index date and First drug,without exclusions",
+     xlab="Drug:Insulin",
+     ylab="Frequency",
+     col="black",
+     freq=T,
+     xlim=c(0,115) ,
+     ylim=c(0,150),
+     breaks = 1000,
+         )
+print(paste("MIN.Insulin value :",min(dades$First.event_Insul_Temps_Index, na.rm=TRUE)))
+print(paste("MAX.Insulin value :",max(dades$First.event_Insul_Temps_Index, na.rm=TRUE)))
+
+
+```
+## 7. Association between the second drug and the first
+
+
+```{r resultats9,include=T,eval=F}
+
+farmcacs1r<-extreure.variables("Farmacs_ad",conductor)
+farmcacs2n<-extreure.variables("Farmacs_2n",conductor)
+
+# Funció per computar n després del segon farmac
+dt_per_fx<-function(primer_fx="First.event_Metformina") {
+  dades %>% filter(!!sym(primer_fx)=="Yes") %>% 
+  summarise_at(farmcacs2n,~sum(.=="Yes"))}
+
+dt_temp1<-farmcacs1r %>% map_df(~dt_per_fx(.x),.id="First drug")
+
+
+# Posar la N= del primer farmac
+dt_temp2<-dades %>% summarise_at(farmcacs1r,~sum(.=="Yes")) %>% 
+  pivot_longer(cols = starts_with("First."),names_to = "First drug",values_to = "N")
+
+# Diagonal a 0
+for (i in 1:(length(dt_temp1)-1)) {dt_temp1[i,i+1]<-0}
+
+
+# N de pacients amb segons farmacs després del primer 
+Extreure_N_despres_primer<-function(primer_fx="First.event_Metformina") {
+  # primer_fx="First.event_Metformina"
+  patro<-stringr::str_split(primer_fx, "_")[[1]][2]
+  # Eliminar segon farmac que conté el patro del primer farmac
+  farmacs_segon<-farmcacs2n[!stringr::str_detect(pattern = patro, farmcacs2n)]
+  # N de pacients amb segons primer farmacs després del primer 
+  dades %>% filter(!!sym(primer_fx)=="Yes") %>% 
+    select(farmacs_segon) %>% comptar_valors(variables = farmacs_segon, valor="Yes") %>% 
+    select(num_valors,farmacs_segon) %>% filter(num_valors>0) %>% count() %>% pull(n)}
+
+dt_temp3<-farmcacs1r %>% map_df(~Extreure_N_despres_primer(.x),.id=fx)  %>% 
+  pivot_longer(cols = starts_with("First."),names_to = "First drug",values_to = "Pac. 2on farmac(N)")
+
+
+# Juntar nom + N + info generada
+dt_temp2 %>% 
+  left_join(dt_temp3,by="First drug") %>% 
+  left_join(dt_temp1,by="First drug") %>% etiquetar_taula(camp = "First drug",taulavariables = conductor) %>% 
+  kable(caption = "Segon fàrmac que s’associa al primer") %>% 
+  kableExtra::kable_styling()
+
+
+  
+```
+
+
+## 8. ANNEX: TYPE 2 diabetes codes
+```{r codis_diabetes2, include=T}
+
+readxl::read_excel(conductor_codis,col_types = "text")%>%select(cod,AGR1,Descripcio)%>% filter(AGR1=="DM2_incusion")%>%select(cod,Descripcio)%>% knitr::kable(caption="Códigos ICD10  y  Fármacos Diabetes TIPO 2")
+
+
+```
+
+
+&nbsp;
+<hr />
+<p style="text-align: center;">A work by $Jordi Real$ $Rai Puig$ </a></p>
+<p style="text-align: center;">$Llepali System$ </a></p>
+<p style="text-align: center;"><span style="color: #808080;"><em><https://github.com/USR-DAPCAT/></em></span></p>
+
+
+
