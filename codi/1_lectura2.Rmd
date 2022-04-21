@@ -42,7 +42,7 @@ params:
 
 # FASE LECTURA
 
->> Generacio de la taula plana part2 [Facturacio+Analitiques+Tabac+FUSIO FINAL TAULA PLANA (2007-2018)]
+>> Generacio de la taula plana part2 [Facturacio+Analitiques+Tabac+FUSIO FINAL TAULA PLANA (2006-2018)]
 
 ```{r setup, include = FALSE}
 #rm(list=ls())
@@ -69,7 +69,7 @@ dt_index<-readRDS(here::here(params$dir_dades_desti,"dt_plana_part1b.rds"))
 dt_variables<-readRDS(here::here(params$dir_dades_desti,"dt_plana_part1c.rds"))
 dt_facturacio<-readRDS(here::here(params$dir_dades_desti,"dt_plana_part1d.rds"))
 
-#obim la base de dades del Tabaquisme
+#obrim la base de dades del Tabaquisme
 dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% as_tibble()
 
 ```
