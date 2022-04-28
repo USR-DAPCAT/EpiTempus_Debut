@@ -103,6 +103,10 @@ dades<-dades %>% mutate(year_inclusio=stringr::str_sub(dtindex,1,4))
 
 # %>% mutate(year_inclusio=if_else(year_inclusio<=2007,"<=2007",year_inclusio))
 
+#
+
+#dades<-dades%>%mutate(exclusio1=DG.Exclusion)
+#dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
 
 
 ```
