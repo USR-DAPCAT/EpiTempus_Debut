@@ -512,6 +512,22 @@ gc()
 ```
 
 
+```{r}
+
+
+
+dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
+
+Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = dt_parametres)
+
+Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = here::here(conductor_codis),sheet="parametres")
+
+
+
+
+```
+
+
 ## 3. Fusion de datos
 ```{r fusio2,include=F}
 
