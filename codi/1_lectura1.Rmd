@@ -59,26 +59,37 @@ directori_dades_origen<-params$dir_dades_origen
 # 1 Lectura -----------
 
 #cridem el catàleg!
-dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(cod,agr,AGR1)
+dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(domini,cod,agr,AGR1)
 
 
-#i) lectura de la Poblacio
+#i)---Lectura de la Poblacio
 dt_poblacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_poblacio_20200206_104913.rds")) %>% as_tibble()
 
 
-#ii) lectura dels Problemes de Salut[Hospital+Caps]
+
+# les bases de dades seguents  la necessitem per fer genearcio del Dia_Index!! ull molt important!
+
+#ii)---Lectura dels Problemes de Salut[Hospital+Caps]
 
 dt_diagnostics_HOSP<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_cmbdh_diagnostics_20200206_104913.rds")) %>% as_tibble()
 
 #26.xii.2020[2Entrega]
-dt_diagnostics_HOSP2<-data.table::fread(here::here(directori_dades_origen,"epiPEUCAT_PX_entregable_cmbdh_diagnostics_20210104_131331.txt"))%>%as_tibble()%>%select(-cingres)%>%select(idp,cod,dat,dx_pos,dalta,calta,id_ingres,origen,codificacio,agr)
+dt_diagnostics_HOSP2<-data.table::fread(here::here(directori_dades_origen,"epiPEUCAT_PX_entregable_cmbdh_diagnostics_20210104_131331.txt"))%>%
+  as_tibble()%>%
+    select(-cingres)%>%
+     select(idp,cod,dat,dx_pos,dalta,calta,id_ingres,origen,codificacio,agr)
+
+
 
 dt_diagnostics_HOSP<-dt_diagnostics_HOSP%>%
   select(idp,cod,dat,agr)%>%
-  bind_rows(select(dt_diagnostics_HOSP2,idp,cod,dat,agr))
+     bind_rows(select(dt_diagnostics_HOSP2,idp,cod,dat,agr))
 
-dt_diagnostics_AP<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_diagnostics_20200206_104913.rds")) %>% as_tibble()
-dt_derivacions<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_derivacions_20200206_104913.rds")) %>% as_tibble()
+dt_diagnostics_AP<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_diagnostics_20200206_104913.rds"))%>%
+   as_tibble()
+
+dt_derivacions<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_derivacions_20200206_104913.rds"))%>%
+   as_tibble()
 
 dt_procediments<-data.table::fread(here::here(directori_dades_origen,"epiPEUCAT_PX_entregable_cmbdh_procediments_20201211_095238.txt"))%>%
   as_tibble()%>%select(idp,cod,dat,agr)
@@ -98,10 +109,11 @@ dt_procediments2<-data.table::fread(here::here(directori_dades_origen,"epiPEUCAT
 # Fusiono dt_diagnostics (E-CAP + Hospital1+Hospital2+Procediments )
 dt_diagnostics_AP_HOSP<-dt_diagnostics_AP%>%transmute(idp,cod=as.character(cod),dat,agr)%>%
   bind_rows(select(dt_diagnostics_HOSP,idp,cod,dat,agr))%>%
-  bind_rows(dt_procediments)%>%bind_rows(dt_procediments2)
+     bind_rows(dt_procediments)%>%
+       bind_rows(dt_procediments2)
 
 
-#la necessitem per fer genearcio del Dia_Index.
+
 
 dt_facturacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_farmacs_facturats_20200206_104913.rds")) %>% as_tibble()
 
@@ -131,10 +143,12 @@ gc()
 ## 2. Agregacion de datos
 ```{r genero_1_FILTRE}
 
-#[13.10.2021]#: Filtrem pacients (2006-2018)
+#Filtrem pacients (2008-2018)
+#Reference Population: These are the patients who were newly diagnosed with T2DM during the period under analysis (between 2008 and 2018).
+
 dt_poblacio<-
   dt_poblacio  %>%
-  filter(entrada>=20060101 & sortida<=20181231)  
+  filter(entrada>=20080101 & sortida<=20181231)  
 
 gc()
 
@@ -193,13 +207,42 @@ dt_cataleg2%>% arrange(agr) %>% kable(caption = "Codis ATC considerats per ident
 
 ```
 
-```{r agregacio_diagnostics1 ,include=F}
+```{r agregacio_diagnostics1.Diagnostics de base  ,include=F}
 # Busco tots els Problemes de SALUT assignats als agregadors del Cataleg, anteriors al dia Index.
 
-dtagr_problemes_epiTempusDM2_AP_HOSP1<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
+dt_cataleg2<-dt_cataleg  %>% filter(domini=="diagnostics"  |
+                                    domini=="cmbdh_diagnostics"  |
+                                    domini=="cmbdh_procediments"  |
+                                    domini=="derivacions"  )
+                                      
+                                      
+                                    
+                                    
+#diagnostics                                    
+#cmbdh_diagnostics  
+#cmbdh_procediments
+#derivacions                                    
+                                   
+
+
+dtagr_epiTempusDM2.Diag<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
                                         bd.dindex = dt_index,
-                                        dt.agregadors=select(dt_cataleg,cod,agr=AGR1),
+                                        dt.agregadors=select(dt_cataleg2,cod,agr=agr),
                                       finestra.dies=c(-Inf,0),prefix = "DG.",cataleg_mana=T)%>%select(-dtindex)
+
+
+
+
+```
+
+
+```{r agregacio_diagnostics1,events ,include=F}
+# Busco tots els Problemes de SALUT assignats als agregadors del Cataleg, anteriors al dia Index.
+
+dtagr_epiTempusDM2.Event<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
+                                        bd.dindex = dt_index,
+                                        dt.agregadors=select(dt_cataleg2,cod,agr=agr),
+                                      finestra.dies=c(1,Inf),prefix = "EVENT.",cataleg_mana=T)%>%select(-dtindex)
 
 ```
 ## 5. Fusio 1
@@ -208,7 +251,9 @@ Fusionar part dels arxius agregats
 ```{r fusio1}
 dt_plana<-dt_index%>%
 left_join(dt_poblacio,by="idp")%>%
- left_join(dtagr_problemes_epiTempusDM2_AP_HOSP1,by=c('idp'))
+ left_join(dtagr_epiTempusDM2.Diag,by=c('idp'))%>%
+   left_join(dtagr_epiTempusDM2.Event,by=c('idp'))
+  
 ```
 
 ## 5. Salvar part1 
@@ -217,7 +262,7 @@ saveRDS(dt_plana,file=here::here(params$dir_dades_desti,"dt_plana_part1a.rds"))
 saveRDS(dt_index,file=here::here(params$dir_dades_desti,"dt_plana_part1b.rds"))
 saveRDS(dt_variables,file=here::here(params$dir_dades_desti,"dt_plana_part1c.rds"))
 saveRDS(dt_facturacio,file=here::here(params$dir_dades_desti,"dt_plana_part1d.rds"))
-
+saveRDS(dt_poblacio,file=here::here(params$dir_dades_desti,"dt_poblacio.rds"))
 
 
 ```

@@ -54,7 +54,7 @@ devtools::source_url(link_source)
 directori_dades_origen<-params$dir_dades_origen
 
 conductor_codis<-here::here("CATALEG_PROYECTO_epitempus.xlsx")
-dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(cod,agr,AGR1)
+dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(domini,cod,agr,AGR1)
 
 
 ```
@@ -72,6 +72,9 @@ dt_facturacio<-readRDS(here::here(params$dir_dades_desti,"dt_plana_part1d.rds"))
 #obrim la base de dades del Tabaquisme
 dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% as_tibble()
 
+dt_poblacio<-readRDS(here::here(params$dir_dades_desti,"dt_poblacio.rds"))
+
+
 ```
 
 ```{r agregacio_facturacio_antecedents, include=F}
@@ -85,15 +88,31 @@ memory.size(max=T)
 gc()
 
 
-dtagr_facturat_epiTempusDM2_1<-agregar_facturacio(
+dt_cataleg2<-dt_cataleg  %>% filter(domini=="farmacs_facturats")
+       
+
+
+dtagr_epiTempusDM2.Fact<-agregar_facturacio(
   dt=dtagr_facturacio,
   bd.dindex=dt_index,
   finestra.dies=c(-Inf,0),
-  dt.agregadors=select(dt_cataleg,cod,agr=AGR1),
+  dt.agregadors=select(dt_cataleg2,cod,agr=agr),
   prefix="FF.",
   agregar_data=T,
   cataleg_mana = T)%>% 
   mutate_at(vars(starts_with("FF.")),~data.to.string(.) %>% as.numeric())%>%select(-dtindex) 
+
+
+dtagr_epiTempusDM2.Fact2<-agregar_facturacio(
+  dt=dtagr_facturacio,
+  bd.dindex=dt_index,
+  finestra.dies=c(-Inf,0),
+  dt.agregadors=select(dt_cataleg2,cod,agr=AGR1),
+  prefix="FF.",
+  agregar_data=T,
+  cataleg_mana = T)%>% 
+  mutate_at(vars(starts_with("FF.")),~data.to.string(.) %>% as.numeric())%>%select(-dtindex)%>%select(-FF.HTA)  
+
 
 
 # Busco totes les FACTURACIONS assignades als agregadors del Cataleg, posteriors al dia Index, la primera, com  EVENT! .
@@ -101,398 +120,13 @@ dtagr_facturat_epiTempusDM2_1<-agregar_facturacio(
 
 ```
 
-
-
-```{r agregacio_facturacio_seguiment, include=F}
-farmacs_events<-c("Metformina","pioglitazona","Sulfonilureas","Glinides","ISGLT2","IDPP4","aGLP1","Insul","Ado")
-
-dt_temp<-dt_cataleg %>% select(cod,agr=AGR1) %>% filter(agr %in% farmacs_events) 
-
-
-dtagr_facturat_epiTempusDM2_2<-agregar_facturacio(
-      dt=dtagr_facturacio,
-      bd.dindex=dt_index,
-      finestra.dies=c(0,+Inf),
-      dt.agregadors=dt_temp,
-      prefix="FF.EVENT.",
-      agregar_data=T) %>% 
-  mutate_at(vars(starts_with("FF.")),~data.to.string(.) %>% as.numeric())%>%select(-dtindex) 
-
-
-
-
-rm(dt_temp)
-
-
-#0069d0447b179af840dddb96dec05700750af897
-
-
-
-```
-
-```{r Primmer_FF,include=F,eval=F}
-farmacs_events<-c("Metformina","pioglitazona","Sulfonilureas","Glinides","ISGLT2","IDPP4","aGLP1","Insul")
-
-dt_temp<-dt_cataleg %>% select(cod,agr=AGR1) %>% filter(agr %in% farmacs_events) 
-
-#semi_join és com un filtre!!
-
-dt_temp2<-
-  dtagr_facturacio %>% 
-  semi_join(dt_temp,by="cod") %>% 
-  left_join(dt_index,by="idp") %>% 
-  left_join (dt_temp,by="cod") %>% mutate (dat=paste0(dat,"15") %>% as.numeric()) %>% 
-  filter(stringr::str_sub(dat,1,6)>=stringr::str_sub(dtindex,1,6)) %>%
-  group_by(idp,agr) %>% summarise(dat_min=min(dat)) %>% ungroup() 
-
-
-dt_temp3<-dt_temp2 %>% group_by(idp) %>% mutate(data_min_fx=min(dat_min)) %>% ungroup() %>% select(idp,dat_min=data_min_fx)
-
-
-dt_primer_fxad<-dt_temp3 %>% left_join(dt_temp2,by=c("idp","dat_min")) %>% distinct() %>% mutate(agr=paste0("First.event_",agr))
-
-
-#fet 20.10.2021#
-
-dtagr_primer_farmac_epiTempusDM2<-dt_primer_fxad %>% pivot_wider(names_from  = agr,values_from = dat_min) %>% 
-  left_join(dt_index,by="idp")
-
-# dtagr_primer_farmac_epiTempusDM2 %>% filter(idp=="06b92d7f2ad5455274a44a515329cd881404adba")
-
-
-
-```
-
-
-```{r Temps_primer_FF,include=F,eval=TRUE,eval=F}
-
-######################################################
-# Calcul del temps en mesos fins primer farmac
-
-dif_temps<-function(t1,t0) {
-  round(as.numeric(lubridate::ymd(t1)-lubridate::ymd(t0))/365.25*12,1)}
-
-dtagr_primer_farmac_epiTempusDM2<-
-  dtagr_primer_farmac_epiTempusDM2 %>%
-  mutate_at(vars(starts_with("First.")),
-         .funs=list(Temps_Index= ~ dif_temps(.,dtindex)))
-
-#
-######################################################
-#
-dtagr_primer_farmac_epiTempusDM2<-mutate_at(dtagr_primer_farmac_epiTempusDM2, vars( starts_with("DG.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_Metformina_Temps_Index=ifelse(First.event_Metformina_Temps_Index<0 ,0,First.event_Metformina_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_Insul_Temps_Index=ifelse(First.event_Insul_Temps_Index<0 ,0,First.event_Insul_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_Sulfonilureas_Temps_Index=ifelse(First.event_Sulfonilureas_Temps_Index<0 ,0,First.event_Sulfonilureas_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_IDPP4_Temps_Index=ifelse(First.event_IDPP4_Temps_Index<0 ,0,First.event_IDPP4_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_Glinides_Temps_Index=ifelse(First.event_Glinides_Temps_Index<0 ,0,First.event_Glinides_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_pioglitazona_Temps_Index=ifelse(First.event_pioglitazona_Temps_Index<0 ,0,First.event_pioglitazona_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_ISGLT2_Temps_Index=ifelse(First.event_ISGLT2_Temps_Index<0 ,0,First.event_ISGLT2_Temps_Index))
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%mutate(First.event_aGLP1_Temps_Index=ifelse(First.event_aGLP1_Temps_Index<0 ,0,First.event_aGLP1_Temps_Index))
-#
-min(dtagr_primer_farmac_epiTempusDM2$First.event_Metformina_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_Insul_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_Sulfonilureas_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_IDPP4_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_Glinides_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_pioglitazona_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_ISGLT2_Temps_Index,na.rm=TRUE)
-min(dtagr_primer_farmac_epiTempusDM2$First.event_aGLP1_Temps_Index,na.rm=TRUE)
-#
-######################################################
-```
-
-
-```{r Primmer_FF_palla,include=F,eval=FALSE,eval=F}
-
-#i)     Metformina]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_Metformina=as.numeric(lubridate::ymd(First.event_Metformina)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_Metformina<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_Metformina,1)
-
-#ii)    pioglitazona]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_pioglitazona=as.numeric(lubridate::ymd(First.event_pioglitazona)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_pioglitazona<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_pioglitazona,1)
-
-#iii)   Sulfonilureas]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_Sulfonilureas=as.numeric(lubridate::ymd(First.event_Sulfonilureas)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_Sulfonilureas<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_Sulfonilureas,1)
-
-#iv)    Glinides]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_Glinides=as.numeric(lubridate::ymd(First.event_Glinides)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_Glinides<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_Glinides,1)
-
-#v)     ISGLT2]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_ISGLT2=as.numeric(lubridate::ymd(First.event_ISGLT2)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_ISGLT2<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_ISGLT2,1)
-
-#vi)    IDPP4]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_IDPP4=as.numeric(lubridate::ymd(First.event_IDPP4)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_IDPP4<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_IDPP4,1)
-
-#vii)   aGLP1]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_aGLP1=as.numeric(lubridate::ymd(First.event_aGLP1)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_aGLP1<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_aGLP1,1)
-
-#viii)  Insul]
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%
-  mutate(Temps_Index_Insul=as.numeric(lubridate::ymd(First.event_Insul)-lubridate::ymd(dtindex))/365.25*12)
-dtagr_primer_farmac_epiTempusDM2$Temps_Index_Insul<-round(dtagr_primer_farmac_epiTempusDM2$Temps_Index_Insul,1)
-#
-######################################################
-
-dtagr_primer_farmac_epiTempusDM2<-dtagr_primer_farmac_epiTempusDM2%>%select(-dtindex)
-
-rm(dt_temp,dt_temp2,dt_temp3)
-
-```
-
-
-
-```{r segonFF,include=F,eval=F}
-
-
-dt_temp<-dt_cataleg %>% select(cod,agr=AGR1) %>% filter(agr %in% farmacs_events) 
-
-
-dt_temp2<-
-  dtagr_facturacio %>% 
-  semi_join(dt_temp) %>% 
-  left_join(dt_index,by="idp") %>% 
-  left_join (dt_temp,by="cod") %>% mutate (dat=paste0(dat,"15") %>% as.numeric()) %>% filter(dat>=dtindex) %>% 
-  group_by(idp,agr) %>% summarise(dat_min=min(dat)) %>% ungroup() %>% 
-  left_join(dt_primer_fxad %>% select(idp,dat_first_ad=dat_min) %>% distinct(),by="idp") %>% 
-  filter(dat_min>dat_first_ad)
-  
-  
-dt_temp3<-dt_temp2 %>% group_by(idp) %>% mutate(data_min_fx=min(dat_min)) %>% ungroup() %>% select(idp,dat_min=data_min_fx)
-
-
-dt_segon_fxad<-dt_temp3 %>% left_join(dt_temp2,by=c("idp","dat_min")) %>% distinct() %>% mutate(agr=paste0("Second.event_",agr))
-
-dtagr_segon_farmac_epiTempusDM2<-dt_segon_fxad %>% pivot_wider(names_from  = agr,values_from = dat_min) 
-
-
-rm(dt_temp,dt_temp2,dt_temp3,dt_segon_fxad)
-
-#idp=="000cb6ac8151ac6c2ca1da7345a69e33e9e57516"
-
-```
-
-
-```{r Primmer_FF_antic,include=T, eval=FALSE}
-
-
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-  mutate(FIRST_FF.EVENT.Metformina=ifelse  (                   (FF.EVENT.Metformina<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.Glinides)   | is.na(FF.EVENT.Glinides)) & 
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) & 
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.IDPP4) | is.na(FF.EVENT.IDPP4)) & 
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.aGLP1)  | is.na(FF.EVENT.aGLP1)) & 
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) &
-                                                               (FF.EVENT.Metformina<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.Metformina,NA))
-
-
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
- mutate(FIRST_FF.EVENT.Sulfonilureas=ifelse((FF.EVENT.Sulfonilureas<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.Glinides)  | is.na(FF.EVENT.Glinides)) &
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) &
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.aGLP1) | is.na(FF.EVENT.aGLP1)) &
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) &   
-                                                                (FF.EVENT.Sulfonilureas<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.Sulfonilureas,NA)) 
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
- mutate(FIRST_FF.EVENT.pioglitazona=ifelse((FF.EVENT.pioglitazona<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.Glinides) | is.na(FF.EVENT.Glinides)) &
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) &
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.aGLP1)  | is.na(FF.EVENT.aGLP1)) &
-                                                               (FF.EVENT.pioglitazona<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.pioglitazona,NA))  
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
- mutate(FIRST_FF.EVENT.Glinides=ifelse((FF.EVENT.Glinides<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina))&
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) & 
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.aGLP1) | is.na(FF.EVENT.aGLP1)) &
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) &   
-                                                           (FF.EVENT.Glinides<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.Glinides,NA)) 
-
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
- mutate(FIRST_FF.EVENT.ISGLT2=ifelse((FF.EVENT.ISGLT2<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.Glinides)  | is.na(FF.EVENT.Glinides)) &
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) &
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.aGLP1) | is.na(FF.EVENT.aGLP1)) &
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) &     
-                                                         (FF.EVENT.ISGLT2<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.ISGLT2,NA))
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-   mutate(FIRST_FF.EVENT.IDPP4=ifelse((FF.EVENT.IDPP4<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.Glinides)  | is.na(FF.EVENT.Glinides)) &
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.aGLP1) | is.na(FF.EVENT.aGLP1)) &
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) & 
-                                                          (FF.EVENT.IDPP4<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.IDPP4,NA))
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-   mutate(FIRST_FF.EVENT.aGLP1=ifelse((FF.EVENT.aGLP1<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                          (FF.EVENT.aGLP1<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) & 
-                                                        (FF.EVENT.aGLP1<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                          (FF.EVENT.aGLP1<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) &
-                                                          (FF.EVENT.aGLP1<=(FF.EVENT.Glinides)  | is.na(FF.EVENT.Glinides)) &
-                                                          (FF.EVENT.aGLP1<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) & 
-                                                          (FF.EVENT.aGLP1<=(FF.EVENT.Insul) | is.na(FF.EVENT.Insul)),FF.EVENT.aGLP1,NA))
-dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-  mutate(FIRST_FF.EVENT.Insul=ifelse((FF.EVENT.Insul<=(FF.EVENT.Metformina)  | is.na(FF.EVENT.Metformina)) &
-                                                          (FF.EVENT.Insul<=(FF.EVENT.Sulfonilureas) | is.na(FF.EVENT.Sulfonilureas)) &
-                                                          (FF.EVENT.Insul<=(FF.EVENT.ISGLT2)  | is.na(FF.EVENT.ISGLT2)) &
-                                                          (FF.EVENT.Insul<=(FF.EVENT.IDPP4)  | is.na(FF.EVENT.IDPP4)) &
-                                                          (FF.EVENT.Insul<=(FF.EVENT.aGLP1) | is.na(FF.EVENT.aGLP1)) &
-                                                          (FF.EVENT.Insul<=(FF.EVENT.pioglitazona)  | is.na(FF.EVENT.pioglitazona)) & 
-                                                          (FF.EVENT.Insul<=(FF.EVENT.Glinides) | is.na(FF.EVENT.Glinides)),FF.EVENT.Insul,NA))
-
-dt_temp<-dtagr_facturat_epiTempusDM2_2%>%select(
-idp,
-FF.EVENT.Metformina,
-FF.EVENT.pioglitazona,
-FF.EVENT.Sulfonilureas,
-FF.EVENT.Glinides,
-FF.EVENT.ISGLT2,
-FF.EVENT.IDPP4,
-FF.EVENT.aGLP1,
-FF.EVENT.Insul
-)
-
-
-
-kk_puig<-dtagr_facturat_epiTempusDM2_2    %>%select(idp,FIRST_FF.EVENT.Metformina)
-kk_real<-dtagr_primer_farmac_epiTempusDM2 %>%select(idp,First.event_Metformina)
-
-kk_puig_kk_real<-kk_puig %>% 
-  left_join(kk_real,by="idp")%>% mutate(ERROR=FIRST_FF.EVENT.Metformina-First.event_Metformina)%>% filter(ERROR!=0)
-
-
-kk_puig_kk_real
-
-#idp::[00d1557d774ac6e3e4892046ef8fc813848ba65f] rai:20180216 real:20180315
-
-
-
-
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.Metformina=FIRST_FF.EVENT.Metformina)  
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.pioglitazona=FIRST_FF.EVENT.pioglitazona)  
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.Sulfonilureas=FF.EVENT.Sulfonilureas) 
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.Glinides=FIRST_FF.EVENT.Glinides) 
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.ISGLT2=FIRST_FF.EVENT.ISGLT2) 
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.IDPP4=FIRST_FF.EVENT.IDPP4) 
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.aGLP1=FIRST_FF.EVENT.aGLP1)  
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%mutate(data_first_EVENT.Insul=FIRST_FF.EVENT.Insul)  
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_Metformina=as.numeric(lubridate::ymd(data_first_EVENT.Metformina)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_pioglitazona=as.numeric(lubridate::ymd(data_first_EVENT.pioglitazona)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_Sulfonilureas=as.numeric(lubridate::ymd(data_first_EVENT.Sulfonilureas)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_Glinides=as.numeric(lubridate::ymd(data_first_EVENT.Glinides)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_ISGLT2=as.numeric(lubridate::ymd(data_first_EVENT.ISGLT2)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_IDPP4=as.numeric(lubridate::ymd(data_first_EVENT.IDPP4)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_aGLP1=as.numeric(lubridate::ymd(data_first_EVENT.aGLP1)-lubridate::ymd(dtindex))/30)
-#  dtagr_facturat_epiTempusDM2_2<-dtagr_facturat_epiTempusDM2_2%>%
-#    mutate(Temps_Index_Insul=as.numeric(lubridate::ymd(data_first_EVENT.Insul)-lubridate::ymd(dtindex))/30)
-#--------------------------------------------------------------------------------------------------------------#
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_Metformina<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_Metformina,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_pioglitazona<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_pioglitazona,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_Sulfonilureas<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_Sulfonilureas,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_Glinides<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_Glinides,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_ISGLT2<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_ISGLT2,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_IDPP4<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_IDPP4,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_aGLP1<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_aGLP1,1)
-#  dtagr_facturat_epiTempusDM2_2$Temps_Index_Insul<-round(dtagr_facturat_epiTempusDM2_2$Temps_Index_Insul,1)
-#--------------------------------------------------------------------------------------------------------------#
-
-gc()
-
-```
-
-
-```{r agregacio_glicada_previ_primer,include=F,eval=F}
-
-
-dt_temp2<-dt_primer_fxad %>% select(idp,dtindex=dat_min) %>% distinct()
-
-dtagr_glicada_first_epiTempusDM2<-
-  dt_variables %>% filter(cod=="GLICADA") %>% 
-  agregar_analitiques (bd.dindex=dt_temp2,finestra.dies = c(-365,0)) %>% 
-  select(-dtindex) %>% 
-  select(idp,GLICADA.val.first=GLICADA.valor)
-
-dt_plana_Metformina<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_Metformina)
-dt_plana_pioglitazona<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_pioglitazona)
-dt_plana_Sulfonilureas<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_Sulfonilureas)
-dt_plana_Glinides<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_Glinides)
-dt_plana_ISGLT2<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_ISGLT2)
-dt_plana_IDPP4<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_IDPP4)
-dt_plana_aGLP1<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_aGLP1)
-dt_plana_Insul<-dtagr_primer_farmac_epiTempusDM2%>%select(idp,First.event_Insul)
-
-First.event_Metformina_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_Metformina,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_Metformina_Glicada_Index=GLICADA.valor)
-
-First.event_pioglitazona_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_pioglitazona,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_pioglitazona_Glicada_Index=GLICADA.valor)
-
-First.event_Sulfonilureas_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_Sulfonilureas,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_Sulfonilureas_Glicada_Index=GLICADA.valor)
-
-First.event_Glinides_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_Glinides,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_Glinides_Glicada_Index=GLICADA.valor)
-
-First.event_ISGLT2_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_ISGLT2,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_ISGLT2_Glicada_Index=GLICADA.valor)
-
-First.event_IDPP4_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_IDPP4,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_IDPP4_Glicada_Index=GLICADA.valor)
-
-First.event_aGLP1_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_aGLP1,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_aGLP1_Glicada_Index=GLICADA.valor)
-
-First.event_Insul_Glicada_Index<-agregar_analitiques(dt=dt_variables%>% filter(cod=="GLICADA") ,bd.dindex=dt_plana_Insul,finestra.dies=c(-365,0))%>%
-  select(-dtindex)%>%select(idp,First.event_Insul_Glicada_Index=GLICADA.valor)
-```
-
-
-
 ```{r agregacio_variables, include=F}
 # Agregacio Analitiques+ Cliniques ------------
 # data mes propera! 365 dies abans!
 # analatiques
 
-dtagr_variables_epiTempusDM2<-agregar_analitiques(dt=dt_variables,bd.dindex=dt_index,finestra.dies = c(-365,0))%>%select(-dtindex)
+dtagr_epiTempusDM2.analitic<-agregar_analitiques(dt=dt_variables,bd.dindex=dt_index,finestra.dies = c(-365,0))%>%select(-dtindex)
 
-dt_variables_mean<-dt_variables%>%filter(cod=="PAS" | cod=="PAD")
-dtagr_variables_epiTempusDM2_mean<-agregar_analitiques(dt=dt_variables_mean,bd.dindex=dt_index,finestra.dies = c(-365,0),fun="mean")
-dtagr_variables_epiTempusDM2_mean<-dtagr_variables_epiTempusDM2_mean%>%select(idp,dtindex ,PAD.mean=PAD.valor,PAS.mean=PAS.valor)%>%select(-dtindex)
-
-#rm(dt_variables)
 gc()
 
 ```
@@ -502,9 +136,9 @@ gc()
 # tabaquisme: busco el tabac més proxim , mirant enrera a partir del diaIndex.
 
 dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val)
-dtagr_tabac_epiTempusDM2<-agregar_analitiques(dt=dt_tabaquisme,bd.dindex=dt_index,finestra.dies = c(-Inf,0))%>%select(-dtindex)
+dtagr_epiTempusDM2.Tabac<-agregar_analitiques(dt=dt_tabaquisme,bd.dindex=dt_index,finestra.dies = c(-Inf,0))%>%select(-dtindex)
 
-rm(dt_tabaquisme)
+#rm(dt_tabaquisme)
 gc()
 
 
@@ -512,52 +146,38 @@ gc()
 ```
 
 
-```{r}
 
 
 
-dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
+## 3. Fusion de datos
+```{r fusio1,include=F}
 
-Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = dt_parametres)
-
-Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = here::here(conductor_codis),sheet="parametres")
-
+dt_plana<-dt_plana %>% 
+    left_join(dtagr_epiTempusDM2.Fact,by=c('idp'))%>%
+     left_join(dtagr_epiTempusDM2.Fact2,by=c('idp'))%>%
+       left_join(dtagr_epiTempusDM2.analitic,by=c('idp'))%>%
+        left_join(dtagr_epiTempusDM2.Tabac,by=c('idp'))
+          
 
 
 
 ```
 
 
-## 3. Fusion de datos
+## 4. Fusion de datos[amb la gran FUNCIO.]
 ```{r fusio2,include=F}
 
-dt_plana<-dt_plana %>% 
-    left_join(dtagr_variables_epiTempusDM2,by=c('idp'))%>%
-      left_join(dtagr_facturat_epiTempusDM2_1,by=c('idp'))%>%
-        left_join(dtagr_facturat_epiTempusDM2_2,by=c('idp'))%>%
-          left_join(dtagr_tabac_epiTempusDM2,by=c('idp'))%>%
-           left_join(dtagr_variables_epiTempusDM2_mean,by=c('idp'))
+
+dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
 
 
-                
-                                             
-#              left_join(dtagr_primer_farmac_epiTempusDM2,by=c('idp'))%>%
-#               left_join(dtagr_segon_farmac_epiTempusDM2,by=c('idp'))%>% 
-  
-  
-#                left_join(dtagr_glicada_first_epiTempusDM2,by=c('idp'))%>%           
-#                  left_join(First.event_Metformina_Glicada_Index,by=c('idp'))%>%   
-#                   left_join(First.event_pioglitazona_Glicada_Index,by=c('idp'))%>%   
-#                     left_join(First.event_Sulfonilureas_Glicada_Index,by=c('idp'))%>%   
-#                       left_join(First.event_Glinides_Glicada_Index,by=c('idp'))%>%   
-#                         left_join(First.event_ISGLT2_Glicada_Index,by=c('idp'))%>%   
-#                           left_join(First.event_IDPP4_Glicada_Index,by=c('idp'))%>%   
-#                              left_join(First.event_aGLP1_Glicada_Index,by=c('idp'))%>%   
-#                                left_join(First.event_Insul_Glicada_Index,by=c('idp'))
-                        
-  
-                         
+dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = dt_parametres)%>%select(-dtindex)
 
+
+
+dt_plana2<-dt_index%>%
+left_join(dt_poblacio,by="idp")%>%
+ left_join(dt_temp,by=c('idp'))
 
 ```
 
