@@ -158,11 +158,25 @@ dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
 ```{r resultats1, include=T}
 #
 
-formu<- formula_table1 ("Taula00",y="age8.cat",taulavariables=conductor,dt=dades)
+formu<- formula_table1 ("Taula01",y="age8.cat",taulavariables=conductor,dt=dades)
 
 #i) GENERAL
 table1::table1(formu,
-               data = dades,caption="General descriptive analysis",
+               data = dades,caption="TABLE1.General descriptive analysis",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+
+```{r resultats2, include=T}
+#
+
+formu<- formula_table1 ("Taula02",y="age8.cat",taulavariables=conductor,dt=dades)
+
+#i) GENERAL
+table1::table1(formu,
+               data = dades,caption="TABLE2.General descriptive analysis",
                render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
 
 
@@ -170,7 +184,50 @@ table1::table1(formu,
 ```
 
 
-  
+```{r resultats3, include=T}
+#
+
+formu<- formula_table1 ("Taula03",y="age8.cat",taulavariables=conductor,dt=dades)
+
+#i) GENERAL
+table1::table1(formu,
+               data = dades,caption="TABLE3.General descriptive analysis",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+
+```{r resultats4, include=T}
+#
+
+formu<- formula_table1 ("Taula04",y="age8.cat",taulavariables=conductor,dt=dades)
+
+#i) GENERAL
+table1::table1(formu,
+               data = dades,caption="TABLE4.General descriptive analysis",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+
+```{r resultats5, include=T}
+#
+
+formu<- formula_table1 ("Taula05",y="age8.cat",taulavariables=conductor,dt=dades)
+
+#i) GENERAL
+table1::table1(formu,
+               data = dades,caption="TABLE5.General descriptive analysis",
+               render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
+
+
+
+```
+
+
+
 ```
 
 
