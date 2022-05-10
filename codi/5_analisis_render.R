@@ -27,6 +27,12 @@
 #--------------------------------------------------------------------------------------------------#
 
 
+
+#[entrada>=20080101 & sortida<=20181231]
+
+#before
+
+
 #--------------------------------------------------------------------------------------------------#
 #                           2018                                                                   #
 #--------------------------------------------------------------------------------------------------#
@@ -65,6 +71,34 @@ rmarkdown::render(input="./codi/1_lectura2.Rmd",
                   params = list(dir_dades_desti=dir_dades_desti ,dir_dades_origen=dir_dades_origen))
 
 #--------------------------------------------------------------------------------------------------#
+
+
+
+
+#now
+
+
+
+
+
+#---------------------------- LECTURA_GRAN_FUNCIO ------------------------------------------------------------# 
+library("dplyr")
+rm(list=ls())
+gc()
+mostra=T
+dir_dades_desti="dades" 
+dir_dades_origen="../DADES/EPIPEU_CAT3/dades" 
+if (mostra) {
+  dir_dades_origen="../../DADES/EPIPEU_CAT3/dades/mostra"
+  dir_dades_desti="dades/mostra" }
+#--------------------------------------------------------------------------------------------------#
+rmarkdown::render(input="./codi/1_lectura_Gran_Funcio.Rmd",
+                  output_file=paste0(here::here("outputs/Informe_Lectura_Gran_Funcio"),Sys.Date()),
+                  params = list(dir_dades_desti=dir_dades_desti ,dir_dades_origen=dir_dades_origen))
+
+#--------------------------------------------------------------------------------------------------#
+
+#../DADES/HTG/HTG" 
 
 #---------------------------  PREPARACIO ----------------------------------------------------------#
 library("dplyr")

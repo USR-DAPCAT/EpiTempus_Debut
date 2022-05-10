@@ -1,5 +1,5 @@
 ---
-title: 'Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[2006-2018] '
+title: 'title: Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[01.01.2008-31.12.2018] '
 author: "Jordi Real & Rai Puig"
 website: "https://github.com/USR-DAPCAT/"
 

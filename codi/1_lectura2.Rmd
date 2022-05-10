@@ -1,5 +1,5 @@
 ---
-title: 'Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[2007-2018] ]'
+title: 'title: Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[01.01.2008-31.12.2018] '
 author: "Jordi Real & Rai Puig"
 website: "https://github.com/USR-DAPCAT/"
 
@@ -111,7 +111,7 @@ dtagr_epiTempusDM2.Fact2<-agregar_facturacio(
   prefix="FF.",
   agregar_data=T,
   cataleg_mana = T)%>% 
-  mutate_at(vars(starts_with("FF.")),~data.to.string(.) %>% as.numeric())%>%select(-dtindex)%>%select(-FF.HTA)  
+  mutate_at(vars(starts_with("FF.")),~data.to.string(.) %>% as.numeric())%>%select(-dtindex)
 
 
 
@@ -165,19 +165,28 @@ dt_plana<-dt_plana %>%
 
 
 ## 4. Fusion de datos[amb la gran FUNCIO.]
-```{r fusio2,include=F}
+```{r fusio2,include=TRUE}
 
 
 dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
 
 
-dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = dt_parametres)%>%select(-dtindex)
+dt_temp<-Generar_taula_plana(dt_index,
+                             cataleg = conductor_codis,
+                             parametres = here::here(conductor_codis),sheet = "parametres") %>% select(-dtindex)
 
 
 
 dt_plana2<-dt_index%>%
 left_join(dt_poblacio,by="idp")%>%
  left_join(dt_temp,by=c('idp'))
+
+
+
+variable.names(dt_plana) %in% variable.names(dt_plana2)
+
+descrTable(dt_plana)
+descrTable(dt_plana2)
 
 ```
 

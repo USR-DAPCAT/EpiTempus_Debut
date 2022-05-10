@@ -1,5 +1,5 @@
 ---
-title: 'Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[2006-2018] '
+title: 'Debut de la  Diabetis Mellitus TIPUS 2 a Catalunya.[01.01.2008-31.12.2018] '
 author: "Rai Puig & Jordi Real"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
@@ -92,6 +92,13 @@ conductor<-here::here("Conductor_PROYECTO_epitempus.xlsx")
 # Llegir plana
 
 dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
+
+
+# primer filtre:
+
+dades<-
+dades  %>%
+  filter(entrada>="2008-01-01" & sortida<="2018-12-31") 
 
 
 ```
