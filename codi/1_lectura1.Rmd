@@ -146,9 +146,9 @@ gc()
 #Filtrem pacients (2008-2018)
 #Reference Population: These are the patients who were newly diagnosed with T2DM during the period under analysis (between 2008 and 2018).
 
-dt_poblacio<-
-  dt_poblacio  %>%
-  filter(entrada>=20080101 & sortida<=20181231)  
+#dt_poblacio<-
+#  dt_poblacio  %>%
+#  filter(entrada>=20080101 & sortida<=20181231)  
 
 gc()
 
@@ -258,6 +258,7 @@ left_join(dt_poblacio,by="idp")%>%
 
 ## 5. Salvar part1 
 ```{r SALVAR}
+
 saveRDS(dt_plana,file=here::here(params$dir_dades_desti,"dt_plana_part1a.rds"))
 saveRDS(dt_index,file=here::here(params$dir_dades_desti,"dt_plana_part1b.rds"))
 saveRDS(dt_variables,file=here::here(params$dir_dades_desti,"dt_plana_part1c.rds"))

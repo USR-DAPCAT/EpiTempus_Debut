@@ -164,31 +164,7 @@ dt_plana<-dt_plana %>%
 ```
 
 
-## 4. Fusion de datos[amb la gran FUNCIO.]
-```{r fusio2,include=TRUE}
 
-
-dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
-
-
-dt_temp<-Generar_taula_plana(dt_index,
-                             cataleg = conductor_codis,
-                             parametres = here::here(conductor_codis),sheet = "parametres") %>% select(-dtindex)
-
-
-
-dt_plana2<-dt_index%>%
-left_join(dt_poblacio,by="idp")%>%
- left_join(dt_temp,by=c('idp'))
-
-
-
-variable.names(dt_plana) %in% variable.names(dt_plana2)
-
-descrTable(dt_plana)
-descrTable(dt_plana2)
-
-```
 
 ## 5. Salvar tabla plana
 ```{r salvar,include=F}

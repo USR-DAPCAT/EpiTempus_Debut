@@ -154,6 +154,12 @@ dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
 
 
 
+descrTable(dades)
+
+
+
+
+
 ```
 
 
