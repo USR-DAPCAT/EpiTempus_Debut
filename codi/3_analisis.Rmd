@@ -35,19 +35,21 @@ params:
 
 **Aggregation windows**
 
+&check; EpiTempus  dt_index to (01.01.2008-31.12.2018) <br/>
+&check; We use the Catlog-Conductor with parameters <br/>
 &check; dt_index1:[dt_diagnostics_AP_HOSP].DM2_incusion.[window.days=c(-Inf,0)] <br/>
 &check; dt_index2:[dt_facturacio].DM2_incusion.[window.days=c(-Inf,0)] <br/>
 &check; dt_index3:dt_variables/filter(cod=="GLICADA") %>% filter(val>=6.5) <br/>
 &check; Dm2 debut: min.date(dt_index1,dt_index2,dt_index3) <br/>
 &check; Problemes de SALUT:[dt_diagnostics_AP_HOSP] [window.days=c(-Inf,0)] <br/>
 &check; Facturacio:[dtagr_facturat_2018_epiTempusDM2_1] [window.days=c(-Inf,0)] <br/>
-&check; Facturacio.events:[dtagr_facturat_2018_epiTempusDM2_1] [window.days=c(0,Inf)] <br/>
+&check; Facturacio.events:[dtagr_facturat_2018_epiTempusDM2_1] [window.days=c(1,Inf)] <br/>
 &check; dt_variables=dt_analitiques+dt_cliniques [window.days=c(-365,0)] <br/>
 &check; dt_tabaquisme [window.days=c(-Inf,0)] <br/>
 
 
 
-**Latest Updates   October/ 2021** 
+**Latest Updates   May/2022** 
 
 &check;   flat table construction+ Tables of first drug billed after diagnosis of DM2    <br/>
 
