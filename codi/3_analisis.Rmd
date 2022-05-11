@@ -96,9 +96,9 @@ dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble
 
 # primer filtre:
 
-dades<-
-dades  %>%
-  filter(entrada>="2008-01-01" & sortida<="2018-12-31") 
+#dades<-
+#dades  %>%
+#  filter(entrada>="2008-01-01" & sortida<="2018-12-31") 
 
 
 ```
