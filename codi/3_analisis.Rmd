@@ -173,7 +173,9 @@ descrTable(dades)
 ```{r resultats1, include=T}
 #
 
-formu<- formula_table1 ("Taula01",y="age8.cat",taulavariables=conductor,dt=dades)
+formu<- formula_table1 ("Taula01",y="age8.cat*sexe",taulavariables=conductor,dt=dades)
+
+#table1(~ age + wt | treat*sex, data=dat)
 
 #i) GENERAL
 table1::table1(formu,
@@ -202,7 +204,7 @@ table1::table1(formu,
 ```{r resultats3, include=T}
 #
 
-formu<- formula_table1 ("Taula03",y="age8.cat",taulavariables=conductor,dt=dades)
+formu<- formula_table1 ("Taula03",y="age8.cat*sexe",taulavariables=conductor,dt=dades)
 
 #i) GENERAL
 table1::table1(formu,
@@ -216,7 +218,7 @@ table1::table1(formu,
 ```{r resultats4, include=T}
 #
 
-formu<- formula_table1 ("Taula04",y="age8.cat",taulavariables=conductor,dt=dades)
+formu<- formula_table1 ("Taula04",y="age8.cat*sexe",taulavariables=conductor,dt=dades)
 
 #i) GENERAL
 table1::table1(formu,
@@ -230,7 +232,7 @@ table1::table1(formu,
 ```{r resultats5, include=T}
 #
 
-formu<- formula_table1 ("Taula05",y="age8.cat",taulavariables=conductor,dt=dades)
+formu<- formula_table1 ("Taula05",y="age8.cat*sexe",taulavariables=conductor,dt=dades)
 
 #i) GENERAL
 table1::table1(formu,

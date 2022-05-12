@@ -231,6 +231,10 @@ dt_plana<-dt_plana%>%mutate(PAS_PAD1=case_when(     PAS.valor<90  & PAD.valor<60
 
 
 
+
+
+
+
 #dt_plana<-dt_plana%>%mutate(PAS_PAD2=case_when(     PAS.mean<90  & PAD.mean<60~ 1,
 #                                                    PAS.mean>=140 | PAD.mean>=90~ 4,     
 #                                                    (PAS.mean>=120 & PAS.mean<140) | (PAD.mean>=80 & PAD.mean<90) ~ 3,
