@@ -67,15 +67,6 @@ dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(domi
 
 
 
-#i)---Lectura de la Poblacio
-dt_poblacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_poblacio_20200206_104913.rds")) %>% as_tibble()
-
-#dt_poblacio<-
-#  dt_poblacio  %>%
-#  filter(entrada>=20080101 & sortida<=20181231)  
-
-#ii)
-dt_analitiques<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_variables_analitiques_20200206_104913.rds")) %>% as_tibble()
 
 
 # les bases de dades seguents  la necessitem per fer genearcio del Dia_Index!! ull molt important!
@@ -136,13 +127,7 @@ dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-agr) %>%
 
 #iV)---Lectura Farmacs Facturats
 dt_facturacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_farmacs_facturats_20200206_104913.rds")) %>% as_tibble()
-dtagr_facturacio<-dt_facturacio %>% transmute(idp,cod,dat,env)
-
-
-#V)---Lectura  Tabaquisme
-dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% as_tibble()
-dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val)
-
+#dtagr_facturacio<-dt_facturacio %>% transmute(idp,cod,dat,env)
 
 
 ```
@@ -202,6 +187,38 @@ dt_cataleg2%>% arrange(agr) %>% kable(caption = "Codis ATC considerats per ident
 
 
 ```
+
+## 1. Lectura B
+
+```{r lectura2 i preparacio per la gran funcio, include=T}
+# 1 Lectura -----------
+
+
+#i)---Lectura de la Poblacio
+dt_poblacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_poblacio_20200206_104913.rds")) %>% as_tibble()%>%
+     semi_join(dt_index,by="idp")
+
+#ii)---Lectura  Tabaquisme
+dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds"))
+dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val) %>% as_tibble()%>%
+     semi_join(dt_index,by="idp")
+
+#iii)
+dt_diagnostics_AP_HOSP%>% as_tibble()%>%
+     semi_join(dt_index,by="idp")
+
+#iv)
+dt_facturacio%>% as_tibble()%>% transmute(idp,cod,dat,env)%>%
+     semi_join(dt_index,by="idp")
+#v)
+dt_variables%>%as_tibble()%>%
+     semi_join(dt_index,by="idp")
+
+
+
+```
+
+
 
 
 
