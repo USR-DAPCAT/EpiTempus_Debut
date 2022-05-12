@@ -124,7 +124,24 @@ dt_diagnostics_AP_HOSP<-dt_diagnostics_AP%>%transmute(idp,cod=as.character(cod),
        bind_rows(dt_procediments2)
 
 #iii)---Lectura  cliniques + variables
+dt_analitiques<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_variables_analitiques_20200206_104913.rds")) %>% as_tibble()
+dt_cliniques<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_variables_cliniques_20200206_104913.rds")) %>% as_tibble()
+#
+# Fusiono cliniques + variables
+#
+dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-agr) %>% 
+  left_join(select(dt_cataleg,cod,agr),by="cod") %>% 
+  select(-cod) %>% rename(cod=agr)
 
+
+#iV)---Lectura Farmacs Facturats
+dt_facturacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_farmacs_facturats_20200206_104913.rds")) %>% as_tibble()
+dtagr_facturacio<-dt_facturacio %>% transmute(idp,cod,dat,env)
+
+
+#V)---Lectura  Tabaquisme
+dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% as_tibble()
+dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val)
 
 
 
@@ -186,38 +203,6 @@ dt_cataleg2%>% arrange(agr) %>% kable(caption = "Codis ATC considerats per ident
 
 ```
 
-
-## 1. Lectura B
-
-```{r lectura2 i preparacio per la gran funcio, include=T}
-gc()
-
-
-dt_analitiques<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_variables_analitiques_20200206_104913.rds")) %>% as_tibble()
-dt_cliniques<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_variables_cliniques_20200206_104913.rds")) %>% as_tibble()
-
-# Fusiono cliniques + variables
-
-dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-agr) %>% 
-  left_join(select(dt_cataleg,cod,agr),by="cod") %>% 
-  select(-cod) %>% rename(cod=agr)
-
-
-
-
-#iV)---Lectura Farmacs Facturats
-
-
-dt_facturacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_farmacs_facturats_20200206_104913.rds")) %>% as_tibble()
-dtagr_facturacio<-dt_facturacio %>% transmute(idp,cod,dat,env)
-
-
-#V)---Lectura  Tabaquisme
-dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% as_tibble()
-dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val)
-
-
-```
 
 
 
