@@ -98,7 +98,7 @@ mostra=T
 dir_dades_desti="dades" 
 dir_dades_origen="../DADES/EPIPEU_CAT3/dades" 
 if (mostra) {
-  dir_dades_origen="../../DADES/EPIPEU_CAT3/dades/mostra"
+  dir_dades_origen="../DADES/EPIPEU_CAT3/dades/mostra"
   dir_dades_desti="dades/mostra" }
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/1_lectura_Gran_Funcio.Rmd",
@@ -115,9 +115,9 @@ rm(list=ls())
 gc()
 mostra=T
 dir_dades_desti="dades" 
-dir_dades_origen="../../DADES/EPIPEU_CAT3/dades" 
+dir_dades_origen="../DADES/EPIPEU_CAT3/dades" 
 if (mostra) {
-  dir_dades_origen="../../DADES/EPIPEU_CAT3/dades/mostra"
+  dir_dades_origen="../DADES/EPIPEU_CAT3/dades/mostra"
   dir_dades_desti="dades/mostra" }
 #--------------------------------------------------------------------------------------------------#
 ANY="20181231"
@@ -163,7 +163,7 @@ dir_dades_desti="dades"
 dir_dades_origen="../DADES/EPIPEU_CAT3/dades" 
 
 if (mostra) {
-  dir_dades_origen="../../DADES/EPIPEU_CAT3/dades/mostra"
+  dir_dades_origen="../DADES/EPIPEU_CAT3/dades/mostra"
   dir_dades_desti="dades/mostra" }
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/1_lectura_Gran_Funcio.Rmd",
@@ -183,7 +183,7 @@ dir_dades_desti="dades"
 dir_dades_origen="../DADES/EPIPEU_CAT3/dades" 
 
 if (mostra) {
-  dir_dades_origen="../../DADES/EPIPEU_CAT3/dades/mostra"
+  dir_dades_origen="../DADES/EPIPEU_CAT3/dades/mostra"
   dir_dades_desti="dades/mostra" }
 #--------------------------------------------------------------------------------------------------#
 ANY="20181231"
