@@ -816,8 +816,9 @@ dt_plana<-dt_plana%>%mutate(PAS_PAD1c=case_when(     (PAS.valor<90  & PAD.valor<
 ## Etiquetar
 ```{r etiquetes}
 
+#error s'ha de mirar ::20080101!!!
 
-dt_plana<-dt_plana%>%mutate(exclusio1=ifelse(dtindex>=20070101 & dtindex<=20181231,0,1))
+dt_plana<-dt_plana%>%mutate(exclusio1=ifelse(dtindex>=20080101 & dtindex<=20181231,0,1))
 
 dt_plana<-mutate_at(dt_plana, vars( starts_with("exclusio") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-dt_plana%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)

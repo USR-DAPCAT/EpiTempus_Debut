@@ -144,8 +144,6 @@ flow_chart1
 #Apliquem les EXCLUSIONS!
 dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
 
-
-
 #Apliquem que surtin els MISSINGS a les TAULES , a partir del CONDUCTOR!
 #dades<-dades%>%mutate_at(extreure.variables("missings",conductor,dt=dades),as.factor)
 
