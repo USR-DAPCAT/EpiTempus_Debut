@@ -186,7 +186,7 @@ if (mostra) {
   dir_dades_origen="../DADES/EPIPEU_CAT3/dades/mostra"
   dir_dades_desti="dades/mostra" }
 #--------------------------------------------------------------------------------------------------#
-ANY="20181231"
+# ANY="20181231"
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/2_preparacio.Rmd",
                   output_file=paste0(here::here("outputs/Informe_Preparacio_"),Sys.Date()),
@@ -205,7 +205,7 @@ if (mostra) {
 #--------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/3_analisis.Rmd",
-                  output_file=paste0(here::here("outputs/Informe_Exploratori_Final_epiTempus_DEBUT_DM2_jordi"),"_",Sys.Date()),
+                  output_file=paste0(here::here("outputs/Informe_Exploratori_Final_epiTempus_DEBUT_DM2_POBLACIO"),"_",Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti))
 #--------------------------------------------------------------------------------------------------#
 
