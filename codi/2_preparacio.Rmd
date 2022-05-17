@@ -59,6 +59,9 @@ dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds")) %>% as_tibb
 
 
 ```
+
+
+
 ## Recodificaciones y calculos
 ```{r recodificacions1}
 
@@ -813,32 +816,7 @@ dt_plana<-dt_plana%>%mutate(PAS_PAD1c=case_when(     (PAS.valor<90  & PAD.valor<
 
 ```
 
-## Etiquetar
-```{r etiquetes}
 
-#error s'ha de mirar ::20080101!!!
-
-dt_plana<-dt_plana%>%mutate(exclusio1=ifelse(dtindex>=20080101 & dtindex<=20181231,0,1))
-
-dt_plana<-mutate_at(dt_plana, vars( starts_with("exclusio") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-dt_plana%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
-
-#Recodificar automaticament a partir del Conductor!
-dt_plana<-recodificar(dt_plana,taulavariables =conductor,"recode",missings = T)
-
-#Etquetem (Si/No)  a partir del Conductor!
-# dt_plana<-factoritzar.NO.SI(dt_plana,"factor",conductor)
-
-var_a_factoritzar<-extreure.variables("factor",conductor,dt=dt_plana)
-dt_plana<-dt_plana %>% mutate_at(var_a_factoritzar,~factor(.,levels = c(0,1),labels = c("No","Yes")))
-
-#Etquetem  VALORS! de les VAR  a partir del Conductor!
-dt_plana<-etiquetar_valors(dt=dt_plana,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta2")
-
-#dt_plana<-etiquetar(dt_plana,taulavariables=conductor,camp_descripcio="descripcio2")
-
-
-```
 ## 4. Salvar tabla plana
 ```{r salvar}
 saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana2.rds"))

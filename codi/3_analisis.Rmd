@@ -13,7 +13,6 @@ output:
     toc: yes
 params:
    dir_dades_desti: "dades/mostra" # dades/mostra"  # dades 
-   ANY: '2018'
    website: https://github.com/USR-DAPCAT/
 ---
 &nbsp;
@@ -96,14 +95,37 @@ conductor<-here::here("Conductor_PROYECTO_epitempus.xlsx")
 dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
 
 
-# primer filtre:
+```
 
-#dades<-
-#dades  %>%
-#  filter(entrada>="2008-01-01" & sortida<="2018-12-31") 
+
+## Etiquetar
+```{r etiquetes}
+
+#error s'ha de mirar ::20080101!!!
+
+dades<-dades%>%mutate(exclusio1=ifelse(dtindex>=20080101 & dtindex<=20181231,0,1))
+
+dades<-mutate_at(dades, vars( starts_with("exclusio") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dades<-dades%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
+
+#Recodificar automaticament a partir del Conductor!
+dades<-recodificar(dades,taulavariables =conductor,"recode",missings = T)
+
+#Etquetem (Si/No)  a partir del Conductor!
+# dt_plana<-factoritzar.NO.SI(dt_plana,"factor",conductor)
+
+var_a_factoritzar<-extreure.variables("factor",conductor,dt=dades)
+dades<-dades %>% mutate_at(var_a_factoritzar,~factor(.,levels = c(0,1),labels = c("No","Yes")))
+
+#Etquetem  VALORS! de les VAR  a partir del Conductor!
+dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta2")
+
+#dt_plana<-etiquetar(dt_plana,taulavariables=conductor,camp_descripcio="descripcio2")
 
 
 ```
+
+
 
 ```{r recodes}
 
@@ -151,10 +173,11 @@ dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
 dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
 
 
+dades %>% group_by(year_inclusio) %>% count() %>% 
+  kable(caption = "Nous pacients DM2 per any") %>% 
+  kableExtra::kable_classic_2()
 
-
-
-descrTable(dades)
+descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
 
 
 
