@@ -120,7 +120,8 @@ dades<-dades %>% mutate_at(var_a_factoritzar,~factor(.,levels = c(0,1),labels = 
 #Etquetem  VALORS! de les VAR  a partir del Conductor!
 dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta2")
 
-#dt_plana<-etiquetar(dt_plana,taulavariables=conductor,camp_descripcio="descripcio2")
+#Apliquem que surtin els MISSINGS a les TAULES , a partir del CONDUCTOR!
+#dades<-dades%>%mutate_at(extreure.variables("missings",conductor,dt=dades),as.factor)
 
 
 ```
@@ -166,8 +167,6 @@ flow_chart1
 #Apliquem les EXCLUSIONS!
 dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
 
-#Apliquem que surtin els MISSINGS a les TAULES , a partir del CONDUCTOR!
-#dades<-dades%>%mutate_at(extreure.variables("missings",conductor,dt=dades),as.factor)
 
 #Etquetem  NOMS! de les  VAR  a partir del Conductor!
 dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
