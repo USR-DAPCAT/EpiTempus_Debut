@@ -174,9 +174,10 @@ dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
 #Etquetem  NOMS! de les  VAR  a partir del Conductor!
 dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
 
+dades$dnaix
 
-dades %>% group_by(year_inclusio) %>% count() %>% 
-  kable(caption = "Nous pacients DM2 per any") %>% 
+dades %>% group_by(year_inclusio) %>% summarise(N=n(),min(dnaix),max(dnaix),min(entrada),max(entrada),min(age),mean(age),max(age)) %>% 
+  kable(caption = "Nous pacients DM2 per any",digits = 2) %>% 
   kableExtra::kable_classic_2()
 
 descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
