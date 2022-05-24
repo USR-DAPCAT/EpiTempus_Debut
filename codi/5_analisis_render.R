@@ -18,7 +18,7 @@ if (mostra) {
 
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/1_lectura_Gran_Funcio.Rmd",
-                  output_file=paste0(here::here("outputs/Informe_Lectura_Gran_Funcio"),Sys.Date()),
+                  output_file=paste0(here::here("outputs/Informe_Lectura_Gran_Funcio_"),Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti ,dir_dades_origen=dir_dades_origen))
 
 #--------------------------------------------------------------------------------------------------#
@@ -89,7 +89,7 @@ if (mostra) {
 
 #--------------------------------------------------------------------------------------------------#
 rmarkdown::render(input="./codi/1_lectura_Gran_Funcio.Rmd",
-                  output_file=paste0(here::here("outputs/Informe_Lectura_Gran_Funcio"),Sys.Date()),
+                  output_file=paste0(here::here("outputs/Informe_Lectura_Gran_Funcio_"),Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti ,dir_dades_origen=dir_dades_origen))
 
 #--------------------------------------------------------------------------------------------------#
