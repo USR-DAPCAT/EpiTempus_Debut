@@ -58,6 +58,7 @@ directori_dades_origen<-params$dir_dades_origen
 dt_cataleg<-readxl::read_excel(conductor_codis,col_types = "text")%>%select(domini,cod,agr,AGR1)
 
 
+
 ```
 
 ## 1. Lectura A
@@ -138,34 +139,33 @@ dt_facturacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_f
 ```{r generacio_dtindex, include=F}
 
 
-
-dt_cataleg2<-dt_cataleg  %>% filter(AGR1=="DM2_incusion")
+# Codis de inclusió 
+dt_cataleg2<-readxl::read_excel(conductor_codis,col_types = "text") %>% 
+  select(domini,cod,agr,AGR1) %>% 
+  filter(AGR1=="DM2_inclusion")
 
 
 #i) Busco la data minima del primer diagnostic de Dm2, de cada pacient.
-
 dt_index1<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
                                            bd.dindex = 20181231,
                                            dt.agregadors=select(dt_cataleg2,cod,agr=AGR1),
-                                           finestra.dies=c(-Inf,0),prefix = "INCLUSIO.",cataleg_mana=T) %>%  select(idp,dtindex=INCLUSIO.DM2_incusion) 
-
+                                           finestra.dies=c(-Inf,0),prefix = "INCLUSIO.",cataleg_mana=T) %>% 
+  select(idp,dtindex=INCLUSIO.DM2_inclusion) 
 
 
 #ii) Busco la data minima del primer diagnostic de Farmac facturat de Dm2, de cada pacient.
-
-
 dt_index2<- 
   dt_facturacio %>% agregar_facturacio(finestra.dies = c(-Inf,0),
                                      dt.agregadors=select(dt_cataleg2,cod,agr=AGR1),
                                      prefix = "INCLUSIO.",camp_agregador="agr",agregar_data=T)%>%  
-                                     transmute(idp,dtindex=data.to.string(INCLUSIO.DM2_incusion) %>% as.numeric())
+                                     transmute(idp,dtindex=data.to.string(INCLUSIO.DM2_inclusion) %>% as.numeric())
 
 
 
 #iii) Busco la data minima  d'una GLICADA >=6.5, de cada pacient.
-
 dt_index3<- 
-  dt_variables %>% filter(cod=="GLICADA") %>% filter(val>=6.5) %>% group_by(idp) %>% slice(which.min(dat)) %>% ungroup() %>% 
+  dt_variables %>% filter(cod=="GLICADA") %>% 
+  filter(val>=6.5) %>% group_by(idp) %>% slice(which.min(dat)) %>% ungroup() %>% 
   select(idp,dtindex=dat)
 
 
@@ -182,7 +182,8 @@ rm(dt_temp1,dt_temp2,dt_temp3,dt_temp4,dt_index1,dt_index2,dt_index3)
 
 #v) Resum dels codi que he agafat!.
 
-dt_cataleg2%>% arrange(agr) %>% kable(caption = "Codis ATC considerats per identificar debut/diagnostic de la diabetis tipo 2") %>% kableExtra::kable_classic_2()
+dt_cataleg2 %>% distinct() %>% arrange(domini,agr) %>%
+  kable(caption = "Codis ATC/CIM10 considerats per identificar debut/diagnostic de la diabetis tipo 2") %>% kableExtra::kable_classic_2()
 
 
 
@@ -190,30 +191,29 @@ dt_cataleg2%>% arrange(agr) %>% kable(caption = "Codis ATC considerats per ident
 
 ## 1. Lectura B
 
+llista de tots els fitxers a agregar
+
 ```{r lectura2 i preparacio per la gran funcio, include=T}
 # 1 Lectura -----------
 
 
 #i)---Lectura de la Poblacio
-dt_poblacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_poblacio_20200206_104913.rds")) %>% as_tibble()%>%
+dt_poblacio<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_poblacio_20200206_104913.rds")) %>% 
      semi_join(dt_index,by="idp")
 
 #ii)---Lectura  Tabaquisme
-dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds"))
-dt_tabaquisme<-dt_tabaquisme %>% transmute(idp,cod="tabac",dat,val) %>% as_tibble()%>%
-     semi_join(dt_index,by="idp")
+dt_tabaquisme<-
+  readRDS(here::here(directori_dades_origen,"epiPEUCAT_entregable_tabaquisme_20200206_104913.rds")) %>% 
+  transmute(idp,cod="tabac",dat,val) %>% 
+  semi_join(dt_index,by="idp")
 
 #iii)
-dt_diagnostics_AP_HOSP%>% as_tibble()%>%
-     semi_join(dt_index,by="idp")
+dt_diagnostics_AP_HOSP <- dt_diagnostics_AP_HOSP %>% semi_join(dt_index,by="idp")
 
 #iv)
-dt_facturacio%>% as_tibble()%>% transmute(idp,cod,dat,env)%>%
-     semi_join(dt_index,by="idp")
+dt_facturacio <- dt_facturacio %>% transmute(idp,cod,dat,env) %>% semi_join(dt_index,by="idp")
 #v)
-dt_variables%>%as_tibble()%>%
-     semi_join(dt_index,by="idp")
-
+dt_variables <- dt_variables %>% semi_join(dt_index,by="idp")
 
 
 ```
@@ -245,7 +245,6 @@ gc()
 ## 3. Fusion de datos[amb la gran FUNCIO.]
 ```{r fusio2,include=TRUE}
 
-
 dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
 
 
@@ -254,10 +253,9 @@ dt_temp<-Generar_taula_plana(dt_index,
                              parametres = here::here(conductor_codis),sheet = "parametres") %>% select(-dtindex)
 
 
-
-dt_plana<-dt_index%>%
-left_join(dt_poblacio,by="idp")%>%
- left_join(dt_temp,by=c('idp'))%>%select(-"<NA>.valor" , -"<NA>.dies")
+dt_plana<- dt_index %>% 
+  left_join(dt_poblacio,by="idp")%>%
+  left_join(dt_temp,by=c('idp')) %>%select(-"<NA>.valor" , -"<NA>.dies")
 
 #descrTable(dt_plana)
 
@@ -268,6 +266,7 @@ left_join(dt_poblacio,by="idp")%>%
 
 ## 4. Salvar tabla plana
 ```{r salvar,include=F}
+
 saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana.rds"))
 
 ```

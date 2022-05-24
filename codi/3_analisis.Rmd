@@ -98,12 +98,25 @@ dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble
 ```
 
 
+```{r, eval=FALSE}
+
+kk<-dades %>% names() %>% tibble()
+colnames(kk)<-"camp"
+kk<- kk %>% mutate(dades_generades=1)
+pp<-read_excel(conductor)
+pp %>% full_join(kk) %>% write.csv2("vars.csv", na="")
+
+
+kk
+
+```
+
+
 ## Etiquetar
 ```{r etiquetes}
 
 #error s'ha de mirar ::20080101!!!
-
-dades<-dades%>%mutate(exclusio1=ifelse(dtindex>=20080101 & dtindex<=20181231,0,1))
+dades<-dades %>% mutate(exclusio1=ifelse(dtindex>=20080101 & dtindex<=20181231,0,1))
 
 dades<-mutate_at(dades, vars( starts_with("exclusio") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dades<-dades%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
@@ -112,10 +125,11 @@ dades<-dades%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
 dades<-recodificar(dades,taulavariables =conductor,"recode",missings = T)
 
 #Etquetem (Si/No)  a partir del Conductor!
-# dt_plana<-factoritzar.NO.SI(dt_plana,"factor",conductor)
 
-var_a_factoritzar<-extreure.variables("factor",conductor,dt=dades)
-dades<-dades %>% mutate_at(var_a_factoritzar,~factor(.,levels = c(0,1),labels = c("No","Yes")))
+dades<- dades %>% mutate_at(vars(starts_with("DG.")), ~if_else(.==1,"Yes","No",missing = "No")) 
+
+dades<- dades %>% mutate_at(vars(starts_with("FF.")), ~if_else(.==1,"Yes","No",missing = "No")) 
+
 
 #Etquetem  VALORS! de les VAR  a partir del Conductor!
 dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta2")
@@ -135,9 +149,8 @@ dades<-dades %>% mutate(year_inclusio=stringr::str_sub(dtindex,1,4))
 
 # %>% mutate(year_inclusio=if_else(year_inclusio<=2007,"<=2007",year_inclusio))
 
-#
+# dades<-dades %>% mutate(exclusio1=if_else(dtindex<20080101 | dtindex>20181231,1,0))
 
-#dades<-dades%>%mutate(exclusio1=DG.Exclusion)
 #dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
 
 
@@ -160,8 +173,6 @@ flow_chart1<-criteris_exclusio_diagrama(dt=dades,
                                         forma=c("ellipse","box"))
 
 flow_chart1
-
-
 
 
 #Apliquem les EXCLUSIONS!
@@ -188,8 +199,10 @@ descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","
 
 
 
+## 2. Descriptive and exploratory general
 
-## 2. Descriptive and exploratory general.
+### Table 1
+
 ```{r resultats1, include=T}
 #
 
@@ -206,6 +219,9 @@ table1::table1(formu,
 
 ```
 
+
+### Table 2
+
 ```{r resultats2, include=T}
 #
 
@@ -213,13 +229,14 @@ formu<- formula_table1 ("Taula02",y="age8.cat",taulavariables=conductor,dt=dades
 
 #i) GENERAL
 table1::table1(formu,
-               data = dades,caption="TABLE2.General descriptive analysis",
+               data = dades,caption="TABLE 2. General descriptive analysis",
                render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
 
 
 
 ```
 
+### Table 3
 
 ```{r resultats3, include=T}
 #
@@ -234,6 +251,7 @@ table1::table1(formu,
 
 
 ```
+### Table 4
 
 ```{r resultats4, include=T}
 #
@@ -242,12 +260,13 @@ formu<- formula_table1 ("Taula04",y="age8.cat*sexe",taulavariables=conductor,dt=
 
 #i) GENERAL
 table1::table1(formu,
-               data = dades,caption="TABLE4.General descriptive analysis",
+               data = dades,caption="TABLE 4.General descriptive analysis",
                render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
 
 
 
 ```
+### Table 5
 
 ```{r resultats5, include=T}
 #
@@ -256,7 +275,7 @@ formu<- formula_table1 ("Taula05",y="age8.cat*sexe",taulavariables=conductor,dt=
 
 #i) GENERAL
 table1::table1(formu,
-               data = dades,caption="TABLE5.General descriptive analysis",
+               data = dades,caption="TABLE 5.General descriptive analysis",
                render.continuous=c(.="Mean (SD)", .="Median [Q1, Q3]"),render.categorical="FREQ (PCTnoNA%)",topclass="Rtable1-zebra")
 
 
@@ -265,13 +284,18 @@ table1::table1(formu,
 
 
 
-```
+# ANNEX: TYPE 2 diabetes codes
 
 
-## 8. ANNEX: TYPE 2 diabetes codes
 ```{r codis_diabetes2, include=T}
 
-readxl::read_excel(conductor_codis,col_types = "text")%>%select(cod,AGR1,Descripcio)%>% filter(AGR1=="DM2_incusion")%>%select(cod,Descripcio)%>% knitr::kable(caption="Códigos ICD10  y  Fármacos Diabetes TIPO 2")
+
+readxl::read_excel(conductor_codis,col_types = "text") %>% 
+  filter(AGR1=="DM2_inclusion") %>% 
+  select(domini,cod,Descripcio) %>%
+  arrange(domini,cod) %>% 
+  knitr::kable(caption="Códigos ICD10  y  Fármacos Diabetes TIPO 2 como criterios de inclusión") %>% 
+  kableExtra::kable_classic_2()
 
 
 ```
