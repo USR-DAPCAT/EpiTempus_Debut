@@ -12,7 +12,7 @@ output:
   word_document:
     toc: yes
 params:
-   dir_dades_desti: "dades/mostra" # dades/mostra"  # dades 
+   dir_dades_desti: "dades" # dades/mostra"  # dades 
    website: https://github.com/USR-DAPCAT/
 ---
 &nbsp;
@@ -86,6 +86,10 @@ devtools::source_url(link_source)
 conductor_codis<-here::here("CATALEG_PROYECTO_epitempus.xlsx")
 conductor<-here::here("Conductor_PROYECTO_epitempus.xlsx")
 
+
+
+
+
 ```
 
 
@@ -98,18 +102,6 @@ dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble
 ```
 
 
-```{r, eval=FALSE}
-
-kk<-dades %>% names() %>% tibble()
-colnames(kk)<-"camp"
-kk<- kk %>% mutate(dades_generades=1)
-pp<-read_excel(conductor)
-pp %>% full_join(kk) %>% write.csv2("vars.csv", na="")
-
-
-kk
-
-```
 
 
 ## Etiquetar
@@ -188,7 +180,6 @@ dades %>% group_by(year_inclusio) %>% count() %>%
   kableExtra::kable_classic_2()
 
 descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
-
 
 
 
@@ -293,7 +284,7 @@ table1::table1(formu,
 readxl::read_excel(conductor_codis,col_types = "text") %>% 
   filter(AGR1=="DM2_inclusion") %>% 
   select(domini,cod,Descripcio) %>%
-  arrange(domini,cod) %>% 
+  arrange(domini,cod) %>% distinct() %>% 
   knitr::kable(caption="Códigos ICD10  y  Fármacos Diabetes TIPO 2 como criterios de inclusión") %>% 
   kableExtra::kable_classic_2()
 
